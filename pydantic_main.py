@@ -1,6 +1,6 @@
 #Importing library
 from pydantic import BaseModel, EmailStr, AnyUrl, Field, field_validator, model_validator, computed_field
-from typing import List, Dict, Optional, Annotated
+from typing import List, Dict, Optional, Annotated, Any
 
 class Address_model(BaseModel):
     city: str
@@ -9,21 +9,21 @@ class Address_model(BaseModel):
 
 class Patient(BaseModel):
    
-    name: Annotated[str, Field(max_length=50, title='Name of Patient')]
-    age: Annotated[int, Field(gt=0, description='Age must not be negative')]
-    email: Annotated[EmailStr, Field(description='email of patients')]
-    linkedIn_URL: Annotated[Optional[AnyUrl], Field(description='This contains the linkedin profile of patient') ]
-    weight: Annotated[float, Field(gt=0)]
-    height: float
-    allergies: Annotated[Optional[List[str]], Field(default=None, description='Allergies are optional')]
-    Contact_details: Annotated[Optional[Dict[str,str]], Field(description='Contains mobile number')]
-    Is_married: Annotated[bool, Field(default=False)]
-    Address: Address_model
+    name:             Annotated[str, Field(max_length=50, title='Name of Patient')]
+    age:              Annotated[int, Field(gt=0, description='Age must not be negative')]
+    email:            Annotated[EmailStr, Field(description='email of patients')]
+    linkedIn_URL:     Annotated[Optional[AnyUrl], Field(description='This contains the linkedin profile of patient') ]
+    weight:           Annotated[float, Field(gt=0)]
+    height:           Annotated[float, Field(gt=0)]
+    allergies:        Annotated[Optional[List[str]], Field(default=None, description='Allergies are optional')]
+    Contact_details:  Annotated[Optional[Dict[str,str]], Field(description='Contains mobile number')]
+    Is_married:       Annotated[bool, Field(default=False)]
+    Address:          Address_model
 
     #Field validation on one field
     @field_validator('email', mode='after')
     @classmethod
-    def email_validator(cls, value):
+    def email_validator(cls, value: str):
         valid_email_domain = ['hdfc.com', 'icici.com']
         domain_name = value.split('@')[-1]
 
@@ -34,23 +34,24 @@ class Patient(BaseModel):
 
     @field_validator('name', mode='after')
     @classmethod
-    def transform_name(cls, value):
+    def transform_name(cls, value: str):
         return value.upper()
     
 
     @field_validator('age', mode='after')
     @classmethod
-    def age_validator(cls, value):
+    def age_validator(cls, value: int):
         if value >10:
             return value
         raise ValueError('Age must be above 10')
     
     #Model validation on more than one field
     @model_validator(mode='after')
-    def validate_emergency_contact(cls, model):
-        if model.age > 60 and 'emergency' not in model.Contact_details:
+    def validate_emergency_contact(self):
+        # Ensure Contact_details is present and contains an 'emergency' key for patients over 60
+        if self.age > 60 and (self.Contact_details is None or 'emergency' not in self.Contact_details):
            raise ValueError('No emergency contact. Please add')
-        return model
+        return self
     
     
     # Compute the bmi from weight and height from user
@@ -73,13 +74,13 @@ Address_info = {
 address_11 = Address_model(**Address_info)
 
 #raw input for patient
-patient_info = {
+patient_info: dict[str, Any] = {
                 'name': 'Nick', 
-                'age': '30', 
+                'age': 30, 
                 'email': 'abc@hdfc.com',
                 'linkedIn_URL': 'https://www.linkedin.com/in/neha-gour/',
-                'weight': '50', 
-                'height': '5',
+                'weight': 50.0, 
+                'height': 5.0,
                 'Contact_details':{'phone_number':'916911911', 'emergency': '916911012'}, 
                 'Address' : address_11
                 }
